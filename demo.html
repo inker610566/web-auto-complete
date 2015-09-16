@@ -1,0 +1,133 @@
+<body>
+<div>
+<input id=target type=text value="hello">
+</div>
+
+<script>
+var AutoComplete = function()
+{
+    var Trie = function()
+    {
+        this.nxt = new Map();
+        this.isString = false;
+        /*
+         * return undefined if not found
+         */
+        this.Go = function(token)
+        {
+            return this.nxt.get(token);
+        };
+        this.GoAndCreate = function(token)
+        {
+            if(!this.nxt.has(token))
+                this.nxt.set(token, new Trie());
+            return this.nxt.get(token);
+        };
+    };
+    var that = this;
+    function _Go(start, str)
+    {
+        for(var i = 0 ; start && i < str.length ; i ++)
+            start = start.Go(str.charAt(i));
+        return start;
+    }
+    function _GoAndCreate(start, str)
+    {
+        for(var i = 0 ; i < str.length ; i ++)
+            start = start.GoAndCreate(str.charAt(i));
+        return start;
+    }
+    function _Traverse(start)
+    {
+        var results = start.isString ? [""] : [];
+        for(var pair of start.nxt)
+        {
+            results.push.apply(results, _Traverse(pair[1]).map(function(s){return pair[0]+s;}));
+        }
+        return results;
+    }
+    this._root = new Trie();
+    this.Add = function(str)
+    {
+        _GoAndCreate(that._root, str).isString = true;
+    };
+    this.Query = function(prefix)
+    {
+        var complete_chars = "";
+        var pos = _Go(this._root, prefix);
+        if(!pos) return {completeString: "", candidates: [""]};
+        while(pos.nxt.size == 1 && !pos.isString)
+        {
+            var kvPair = pos.nxt.entries().next().value;
+            complete_chars += kvPair[0];
+            pos = kvPair[1];
+        }
+        return {
+            completeString: complete_chars,
+            candidates: _Traverse(pos)
+        };
+    };
+};
+
+var xx = "";
+(function Install(textbox)
+{
+    // set Model
+    var Model = new AutoComplete();
+    Model.Add('Hello');
+    Model.Add('HiNet');
+    xx = Model;
+    // set wrapper
+    var wrapper = document.createElement('div');
+    wrapper.style.position = 'relative';
+    // set innerTextBox
+    var innerTextBox = document.createElement('input');
+    innerTextBox.type = 'text';
+    innerTextBox.style.position = 'absolute';
+    innerTextBox.style.background = 'rgba(0,0,0,0)';
+    innerTextBox.style.borderColor = 'rgba(0,0,0,0)';
+    innerTextBox.style.outline = 0;
+    innerTextBox.onkeyup = function(e)
+    {
+        if(e.which == 9)
+        {
+            return ;
+        }
+        var res = Model.Query(innerTextBox.value);
+        if(res.candidates.length == 0)
+        {
+            textbox.value = "";
+        }
+        else
+        {
+            textbox.value = innerTextBox.value + res.completeString + res.candidates[0];
+            if(res.candidates.length > 1)
+            {
+            }
+        }
+    };
+
+    innerTextBox.onkeydown = function(e)
+    {
+        if(e.which == 9)
+        {
+            // complete
+            var res = Model.Query(innerTextBox.value);
+            innerTextBox.value += res.completeString;
+            textbox.value = innerTextBox.value + res.candidates[0];
+            return false;
+        }
+    };
+    //innerTextBox.style.outline = "none";
+
+    textbox.parentNode.replaceChild(wrapper, textbox);
+    wrapper.appendChild(textbox);
+    wrapper.appendChild(innerTextBox);
+
+    // set textbox
+    textbox.style.position = 'absolute';
+    textbox.style.background = 'pink';
+    textbox.style.color = 'gray';
+})(target);
+</script>
+</body>
