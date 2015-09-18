@@ -69,7 +69,7 @@ var AutoComplete = function()
     };
 };
 
-(function Install(textbox)
+(function Install(textbox, submitHandler)
 {
     // set Model
     var Model = new AutoComplete();
@@ -115,6 +115,10 @@ var AutoComplete = function()
             textbox.value = innerTextBox.value + res.candidates[0];
             return false;
         }
+        else if(e.which == 13)
+        {
+            submitHandler(innerTextBox.value);
+        }
     };
     //innerTextBox.style.outline = "none";
 
@@ -126,6 +130,6 @@ var AutoComplete = function()
     textbox.style.position = 'absolute';
     textbox.style.background = 'pink';
     textbox.style.color = 'gray';
-})(target);
+})(target, function(s){console.log('submit ' + s); return false;});
 </script>
 </body>
